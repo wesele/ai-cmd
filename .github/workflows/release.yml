@@ -1,0 +1,51 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+
+      - name: Install UPX
+        run: sudo apt-get update && sudo apt-get install -y upx
+
+      - name: Build Windows
+        env:
+          GOOS: windows
+          GOARCH: amd64
+        run: |
+          go build -ldflags="-s -w" -trimpath -o ai.exe .
+          upx --best ai.exe
+
+      - name: Build Linux
+        env:
+          GOOS: linux
+          GOARCH: amd64
+        run: |
+          go build -ldflags="-s -w" -trimpath -o ai-linux .
+          upx --best ai-linux
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ai.exe
+            ai-linux
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
