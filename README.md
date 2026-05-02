@@ -51,6 +51,8 @@ You can configure the tool via environment variables or a configuration file loc
 
 ### Usage
 
+To use `ai` from any directory, add the folder containing the `ai` binary to your system's `PATH` environment variable.
+
 ```bash
 ai <your natural language command>
 ```
@@ -108,6 +110,8 @@ go build -ldflags="-s -w" -trimpath -o ai.exe .
 ```
 
 ### 使用方法
+
+为了在任意目录下使用 `ai` 命令，请将 `ai` 二进制文件所在的文件夹添加到系统的 `PATH` 环境变量中。
 
 ```bash
 ai <自然语言指令>
