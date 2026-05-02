@@ -1,5 +1,8 @@
 # AI Command (ai-cmd)
 
+[![Releases](https://img.shields.io/github/v/release/wesele/ai-cmd?include_prereleases)](https://github.com/wesele/ai-cmd/releases)
+[![Download](https://img.shields.io/badge/download-latest_binaries-blue)](https://github.com/wesele/ai-cmd/releases/latest)
+
 A lightweight CLI tool that converts natural language instructions into executable system commands (PowerShell/Bash) using Large Language Models.
 
 [English](#english) | [中文](#中文)
