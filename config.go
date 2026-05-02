@@ -23,8 +23,8 @@ func getConfigPath() (string, error) {
 
 func LoadConfig() *Config {
 	cfg := &Config{
-		Endpoint: "http://192.168.31.233:4001/v1",
-		Model:    "qwen3-next",
+		Endpoint: "http://10.203.106.209:80/v1",
+		Model:    "Qwen3.6-35B-A3B-UD-Q5_K_S.gguf",
 	}
 
 	path, err := getConfigPath()
