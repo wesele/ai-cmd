@@ -21,6 +21,9 @@ A lightweight CLI tool that converts natural language instructions into executab
   - <kbd>🟡 Yellow</kbd>: Low danger / Creating content (e.g., `mkdir`, `touch`)
   - <kbd>🟠 Orange</kbd>: Medium danger / Modifying individual items (e.g., `rm file.txt`)
   - <kbd>🔴 Red</kbd>: High danger / Batch deletion or system changes (e.g., `rm -rf`, `format`)
+- **Multi-Provider Support**: Compatible with OpenAI API and Baidu Wenxin, easily extensible to other AI platforms.
+- **Configuration Wizard**: Interactive setup with `ai -c` to configure API keys without manual editing.
+- **Debug Mode**: Enable detailed logging with `ai -d` for troubleshooting.
 - **Interactive Flow**: Spinners during API calls and a "press Enter to execute" confirmation step.
 - **Optimized**: Compact binary (~2.3MB) thanks to build optimizations and UPX compression.
 
@@ -36,19 +39,37 @@ go build -ldflags="-s -w" -trimpath -o ai.exe .
 
 ### Configuration
 
-You can configure the tool via environment variables or a configuration file located at `~/.ai-cmd.json`.
+You can configure the tool via environment variables, a configuration file at `~/.ai-cmd.json`, or the interactive config wizard.
+
+**Quick Setup:**
+```bash
+ai -c
+```
 
 **Environment Variables:**
 - `AI_CMD_API_KEY`: Your LLM API key.
 - `AI_CMD_ENDPOINT`: API endpoint (OpenAI compatible, e.g., `https://api.openai.com/v1`).
 - `AI_CMD_MODEL`: The model name to use (e.g., `gpt-4o`).
+- `AI_CMD_PROVIDER`: AI provider (`openai` or `baidu`).
 
 **Config File (`~/.ai-cmd.json`):**
 ```json
 {
+  "provider": "openai",
   "api_key": "your-key-here",
   "endpoint": "https://api.openai.com/v1",
   "model": "gpt-4o"
+}
+```
+
+For Baidu Wenxin:
+```json
+{
+  "provider": "baidu",
+  "api_key": "your-api-key",
+  "secret": "your-secret-key",
+  "endpoint": "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions",
+  "model": "ernie-4.0-turbo-8k"
 }
 ```
 
@@ -56,12 +77,19 @@ You can configure the tool via environment variables or a configuration file loc
 
 To use `ai` from any directory, add the folder containing the `ai` binary to your system's `PATH` environment variable.
 
+**Options:**
+- `ai <command>` - Convert natural language to command and execute
+- `ai -d <command>` - Enable debug mode (output logs to stderr)
+- `ai -c` - Run configuration wizard
+- `ai -h` - Show help message
+
 ```bash
 ai <your natural language command>
 ```
 
 **Examples:**
 - `ai show all usb cameras`
+- `ai -d explain current directory structure`
 - `ai find all files larger than 100MB in c:\data`
 - `ai kill the process using port 8080`
 
@@ -74,13 +102,16 @@ AI Command 是一个轻量级的命令行工具，利用大语言模型（LLM）
 
 ### 功能特性
 
-- **自然语言处理**：将“列出 temp 文件夹下所有的日志文件”之类的短语转换为精确的 shell 命令。
+- **自然语言处理**：将"列出 temp 文件夹下所有的日志文件"之类的短语转换为精确的 shell 命令。
 - **跨平台支持**：自动检测操作系统，并为 **Windows PowerShell** 或 **Linux Bash** 生成相应的命令。
 - **危险等级高亮**：根据命令的潜在影响进行视觉颜色预警：
   - <kbd>🟢 绿色</kbd>：无害 / 只读类（如 `ls`, `Get-Process`）
   - <kbd>🟡 黄色</kbd>：低风险 / 创建内容（如 `mkdir`, `touch`）
   - <kbd>🟠 橙色</kbd>：中风险 / 修改单个对象（如 `rm file.txt`）
   - <kbd>🔴 红色</kbd>：高风险 / 批量删除或系统级更改（如 `rm -rf`, `format`）
+- **多平台支持**：兼容 OpenAI API 和百度文心一言，可轻松扩展至其他 AI 平台。
+- **配置向导**：使用 `ai -c` 交互式配置 API 密钥，无需手动编辑文件。
+- **调试模式**：使用 `ai -d` 启用详细日志输出，便于排查问题。
 - **交互式流程**：在调用 API 时显示动画，并在执行前提供预览，等待回车确认。
 - **极小体积**：经过编译优化和 UPX 压缩，二进制文件仅约 2.3MB。
 
@@ -96,19 +127,37 @@ go build -ldflags="-s -w" -trimpath -o ai.exe .
 
 ### 配置
 
-您可以通过环境变量或位于 `~/.ai-cmd.json` 的配置文件进行配置。
+您可以通过环境变量、位于 `~/.ai-cmd.json` 的配置文件或交互式配置向导进行配置。
+
+**快速设置：**
+```bash
+ai -c
+```
 
 **环境变量：**
 - `AI_CMD_API_KEY`: 您的 LLM API 密钥。
 - `AI_CMD_ENDPOINT`: API 端点 (兼容 OpenAI 格式)。
 - `AI_CMD_MODEL`: 使用的模型名称。
+- `AI_CMD_PROVIDER`: AI 提供商 (`openai` 或 `baidu`)。
 
 **配置文件 (`~/.ai-cmd.json`):**
 ```json
 {
+  "provider": "openai",
   "api_key": "您的密钥",
   "endpoint": "https://api.openai.com/v1",
   "model": "gpt-4o"
+}
+```
+
+百度文心一言配置：
+```json
+{
+  "provider": "baidu",
+  "api_key": "您的API Key",
+  "secret": "您的Secret Key",
+  "endpoint": "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions",
+  "model": "ernie-4.0-turbo-8k"
 }
 ```
 
@@ -116,12 +165,19 @@ go build -ldflags="-s -w" -trimpath -o ai.exe .
 
 为了在任意目录下使用 `ai` 命令，请将 `ai` 二进制文件所在的文件夹添加到系统的 `PATH` 环境变量中。
 
+**命令行选项：**
+- `ai <指令>` - 转换自然语言并执行命令
+- `ai -d <指令>` - 启用调试模式（输出日志到 stderr）
+- `ai -c` - 运行配置向导
+- `ai -h` - 显示帮助信息
+
 ```bash
 ai <自然语言指令>
 ```
 
 **示例：**
 - `ai 显示系统内所有 USB 摄像头设备`
+- `ai -d 解释当前目录结构`
 - `ai 查找 c:\data 中大于 100MB 的所有文件`
 - `ai 杀掉占用 8080 端口的进程`
 

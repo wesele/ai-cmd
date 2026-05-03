@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"os"
 	"os/exec"
@@ -9,8 +8,7 @@ import (
 )
 
 func Execute(command string) int {
-	reader := bufio.NewReader(os.Stdin)
-	_, _ = reader.ReadString('\n')
+	LogInfo("Executing: %q", command)
 
 	var cmd *exec.Cmd
 	if runtime.GOOS == "windows" {
@@ -25,10 +23,14 @@ func Execute(command string) int {
 
 	if err := cmd.Run(); err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok {
+			LogError("Command failed with exit code %d: %q", exitErr.ExitCode(), command)
 			return exitErr.ExitCode()
 		}
+		LogError("Execution error: %v | Command: %q", err, command)
 		fmt.Fprintf(os.Stderr, "Execution error: %v\n", err)
 		return 1
 	}
+
+	LogInfo("Command executed successfully: %q", command)
 	return 0
 }
