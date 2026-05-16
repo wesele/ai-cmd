@@ -15,6 +15,7 @@ A lightweight CLI tool that converts natural language instructions into executab
 ### Features
 
 - **Natural Language Processing**: Convert phrases like "list all log files in temp folder" into precise shell commands.
+- **Assistant Mode (`-a`)**: Ask AI questions about your system. The AI autonomously runs read-only commands to gather information and provides a clear answer — with full transparency on every command executed and its purpose.
 - **Cross-Platform**: Automatically detects OS and generates appropriate commands for **Windows PowerShell** or **Linux Bash**.
 - **Danger Level Highlighting**: Visual color-coded warnings based on the command's potential impact:
   - <kbd>🟢 Green</kbd>: Harmless / Read-only (e.g., `ls`, `Get-Process`)
@@ -24,7 +25,6 @@ A lightweight CLI tool that converts natural language instructions into executab
 - **Multi-Provider Support**: Compatible with OpenAI API and Baidu Wenxin, easily extensible to other AI platforms.
 - **Configuration Wizard**: Interactive setup with `ai -c` to configure API keys without manual editing.
 - **Debug Mode**: Enable detailed logging with `ai -d` for troubleshooting.
-- **Interactive Flow**: Spinners during API calls and a "press Enter to execute" confirmation step.
 - **Optimized**: Compact binary (~2.3MB) thanks to build optimizations and UPX compression.
 
 ### Installation
@@ -79,6 +79,7 @@ To use `ai` from any directory, add the folder containing the `ai` binary to you
 
 **Options:**
 - `ai <command>` - Convert natural language to command and execute
+- `ai -a <question>` - Ask AI about your system (assistant mode, read-only commands only)
 - `ai -d <command>` - Enable debug mode (output logs to stderr)
 - `ai -c` - Run configuration wizard
 - `ai -h` - Show help message
@@ -92,6 +93,8 @@ ai <your natural language command>
 - `ai -d explain current directory structure`
 - `ai find all files larger than 100MB in c:\data`
 - `ai kill the process using port 8080`
+- `ai -a are there any unrecognized processes running on my system`
+- `ai -a what services are running on my system`
 
 ---
 
@@ -103,6 +106,7 @@ AI Command 是一个轻量级的命令行工具，利用大语言模型（LLM）
 ### 功能特性
 
 - **自然语言处理**：将"列出 temp 文件夹下所有的日志文件"之类的短语转换为精确的 shell 命令。
+- **助手模式 (`-a`)**：向 AI 提问关于系统的问题。AI 会自动执行只读命令收集信息并给出清晰回答 —— 每条执行的命令和调用目的都完全透明。
 - **跨平台支持**：自动检测操作系统，并为 **Windows PowerShell** 或 **Linux Bash** 生成相应的命令。
 - **危险等级高亮**：根据命令的潜在影响进行视觉颜色预警：
   - <kbd>🟢 绿色</kbd>：无害 / 只读类（如 `ls`, `Get-Process`）
@@ -112,7 +116,6 @@ AI Command 是一个轻量级的命令行工具，利用大语言模型（LLM）
 - **多平台支持**：兼容 OpenAI API 和百度文心一言，可轻松扩展至其他 AI 平台。
 - **配置向导**：使用 `ai -c` 交互式配置 API 密钥，无需手动编辑文件。
 - **调试模式**：使用 `ai -d` 启用详细日志输出，便于排查问题。
-- **交互式流程**：在调用 API 时显示动画，并在执行前提供预览，等待回车确认。
 - **极小体积**：经过编译优化和 UPX 压缩，二进制文件仅约 2.3MB。
 
 ### 安装
@@ -167,6 +170,7 @@ ai -c
 
 **命令行选项：**
 - `ai <指令>` - 转换自然语言并执行命令
+- `ai -a <问题>` - 向 AI 提问关于系统的问题（助手模式，仅执行只读命令）
 - `ai -d <指令>` - 启用调试模式（输出日志到 stderr）
 - `ai -c` - 运行配置向导
 - `ai -h` - 显示帮助信息
@@ -180,6 +184,8 @@ ai <自然语言指令>
 - `ai -d 解释当前目录结构`
 - `ai 查找 c:\data 中大于 100MB 的所有文件`
 - `ai 杀掉占用 8080 端口的进程`
+- `ai -a 系统里有没有不认识的进程`
+- `ai -a 当前系统运行了哪些服务`
 
 ---
 

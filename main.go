@@ -12,15 +12,19 @@ func showHelp() {
 	fmt.Println("AI Command - Natural language to shell command converter")
 	fmt.Println("\nUsage:")
 	fmt.Println("  ai [options] <command>    Convert natural language to a shell command and execute it")
+	fmt.Println("  ai -a <question>          Ask AI about your system (AI runs read-only commands to answer)")
 	fmt.Println("\nOptions:")
 	fmt.Println("  -h, --help     Show this help message")
 	fmt.Println("  -d, --debug    Enable debug mode (output logs to stderr)")
 	fmt.Println("  -c, --config   Run configuration wizard to set up API keys")
+	fmt.Println("  -a, --ask      Ask AI about your system (assistant mode)")
 	fmt.Println("\nExamples:")
 	fmt.Println("  ai list all files in current directory")
 	fmt.Println("  ai -d explain current directory structure")
 	fmt.Println("  ai show system all usb camera devices")
 	fmt.Println("  ai find all log files in c:\\temp including subdirectories")
+	fmt.Println("  ai -a 系统里有没有不认识的进程")
+	fmt.Println("  ai -a what services are running on my system")
 	fmt.Println("\nConfiguration:")
 	fmt.Println("  Environment Variables:")
 	fmt.Println("    AI_CMD_API_KEY      Your LLM API key")
@@ -51,16 +55,19 @@ func colorize(text, level string) string {
 }
 
 func main() {
-	// Filter out -d/--debug and -c/--config flags
+	// Filter out flags
 	args := []string{os.Args[0]}
 	debugEnabled := false
 	runConfig := false
+	assistantMode := false
 	for _, arg := range os.Args[1:] {
 		switch arg {
 		case "-d", "--debug":
 			debugEnabled = true
 		case "-c", "--config":
 			runConfig = true
+		case "-a", "--ask":
+			assistantMode = true
 		default:
 			args = append(args, arg)
 		}
@@ -92,6 +99,11 @@ func main() {
 
 	naturalLang := strings.Join(os.Args[1:], " ")
 	LogInfo("Input: %q", naturalLang)
+
+	if assistantMode {
+		RunAssistantMode(cfg, naturalLang)
+		return
+	}
 
 	stopSpinner := make(chan bool)
 	go func() {
@@ -131,7 +143,7 @@ func main() {
 	}
 
 	LogCommand(naturalLang, command, danger, elapsed)
-	fmt.Printf("\n> %s\n(Press Enter to execute or Ctrl+C to cancel)\n", colorize(command, danger))
+	fmt.Printf("\r> %s", colorize(command, danger))
 
 	reader := bufio.NewReader(os.Stdin)
 	_, _ = reader.ReadString('\n')

@@ -10,6 +10,7 @@ import (
 
 type Provider interface {
 	ConvertToCommand(cfg *Config, naturalLang string) (string, string, error)
+	ChatWithTools(cfg *Config, messages []Message) (*ChatResponseWithTools, error)
 }
 
 type OpenAIProvider struct{}
@@ -84,11 +85,91 @@ Rules:
 	raw = strings.TrimSpace(raw)
 
 	var result CommandResult
-	if err := json.Unmarshal([]byte(raw), &result); err != nil {
+	if err := extractJSON(raw, &result); err != nil {
 		return raw, "orange", nil
 	}
 
 	return result.Command, result.Danger, nil
+}
+
+func (p *OpenAIProvider) ChatWithTools(cfg *Config, messages []Message) (*ChatResponseWithTools, error) {
+	tools := []ToolDefinition{
+		{
+			Type: "function",
+			Function: ToolFunc{
+				Name:        "execute_command",
+				Description: "Execute a read-only system command to gather information. Only safe, non-modifying commands are allowed.",
+				Parameters: ToolParameters{
+					Type: "object",
+					Properties: map[string]ToolProp{
+						"command": {
+							Type:        "string",
+							Description: "The read-only shell command to execute",
+						},
+						"purpose": {
+							Type:        "string",
+							Description: "Brief explanation of why this command is being run",
+						},
+					},
+					Required: []string{"command", "purpose"},
+				},
+			},
+		},
+	}
+
+	chatReq := ChatRequestWithTools{
+		Model:       cfg.Model,
+		Messages:    messages,
+		Temperature: 0,
+		Tools:       tools,
+	}
+
+	body, err := json.Marshal(chatReq)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	endpoint := cfg.Endpoint
+	if !strings.HasSuffix(endpoint, "/chat/completions") {
+		endpoint = endpoint + "/chat/completions"
+	}
+
+	httpReq, err := http.NewRequest("POST", endpoint, bytes.NewReader(body))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+	if cfg.APIKey != "" {
+		httpReq.Header.Set("Authorization", "Bearer "+cfg.APIKey)
+	}
+
+	resp, err := http.DefaultClient.Do(httpReq)
+	if err != nil {
+		return nil, fmt.Errorf("API request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	var chatResp ChatResponseWithTools
+	if err := json.NewDecoder(resp.Body).Decode(&chatResp); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	if chatResp.Error != nil {
+		return nil, fmt.Errorf("API error: %s", chatResp.Error.Message)
+	}
+
+	if len(chatResp.Choices) == 0 {
+		return nil, fmt.Errorf("no response from API")
+	}
+
+	return &chatResp, nil
+}
+
+type ChatRequestWithTools struct {
+	Model       string           `json:"model"`
+	Messages    []Message        `json:"messages"`
+	Temperature float64          `json:"temperature"`
+	Tools       []ToolDefinition `json:"tools,omitempty"`
 }
 
 func GetProvider(cfg *Config) Provider {
@@ -173,11 +254,15 @@ Rules:
 
 	raw := strings.TrimSpace(baiduResp.Result)
 	var result CommandResult
-	if err := json.Unmarshal([]byte(raw), &result); err != nil {
+	if err := extractJSON(raw, &result); err != nil {
 		return raw, "orange", nil
 	}
 
 	return result.Command, result.Danger, nil
+}
+
+func (p *BaiduProvider) ChatWithTools(cfg *Config, messages []Message) (*ChatResponseWithTools, error) {
+	return nil, fmt.Errorf("Baidu provider does not support tool calling mode")
 }
 
 func getBaiduAccessToken(apiKey, secretKey string) (string, error) {
@@ -204,4 +289,13 @@ func getBaiduAccessToken(apiKey, secretKey string) (string, error) {
 	}
 
 	return tokenResp.AccessToken, nil
+}
+
+func extractJSON(data string, v interface{}) error {
+	start := strings.Index(data, "{")
+	if start == -1 {
+		return fmt.Errorf("no JSON object found")
+	}
+	decoder := json.NewDecoder(strings.NewReader(data[start:]))
+	return decoder.Decode(v)
 }
