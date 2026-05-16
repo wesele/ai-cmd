@@ -15,7 +15,11 @@ A lightweight CLI tool that converts natural language instructions into executab
 ### Features
 
 - **Natural Language Processing**: Convert phrases like "list all log files in temp folder" into precise shell commands.
-- **Assistant Mode (`-a`)**: Ask AI questions about your system. The AI autonomously runs read-only commands to gather information and provides a clear answer — with full transparency on every command executed and its purpose.
+- **Assistant Mode (`-a`)**: Ask AI questions about your system. The AI autonomously runs commands to gather information and provides a clear answer — with full transparency on every command executed and its purpose.
+  - **Three-tier Safety Mechanism**:
+    - 🟢 **Read-only**: Auto-executed (e.g., `Get-Process`, `ping`)
+    - 🟡 **Non-read-only**: Requires user confirmation (yellow highlight)
+    - 🔴 **Dangerous**: Requires user confirmation (red highlight)
 - **Cross-Platform**: Automatically detects OS and generates appropriate commands for **Windows PowerShell** or **Linux Bash**.
 - **Danger Level Highlighting**: Visual color-coded warnings based on the command's potential impact:
   - <kbd>🟢 Green</kbd>: Harmless / Read-only (e.g., `ls`, `Get-Process`)
@@ -79,7 +83,7 @@ To use `ai` from any directory, add the folder containing the `ai` binary to you
 
 **Options:**
 - `ai <command>` - Convert natural language to command and execute
-- `ai -a <question>` - Ask AI about your system (assistant mode, read-only commands only)
+- `ai -a <question>` - Ask AI about your system (assistant mode with safety checks)
 - `ai -d <command>` - Enable debug mode (output logs to stderr)
 - `ai -c` - Run configuration wizard
 - `ai -h` - Show help message
@@ -106,7 +110,11 @@ AI Command 是一个轻量级的命令行工具，利用大语言模型（LLM）
 ### 功能特性
 
 - **自然语言处理**：将"列出 temp 文件夹下所有的日志文件"之类的短语转换为精确的 shell 命令。
-- **助手模式 (`-a`)**：向 AI 提问关于系统的问题。AI 会自动执行只读命令收集信息并给出清晰回答 —— 每条执行的命令和调用目的都完全透明。
+- **助手模式 (`-a`)**：向 AI 提问关于系统的问题。AI 会自动执行命令收集信息并给出清晰回答 —— 每条执行的命令和调用目的都完全透明。
+  - **三级安全机制**：
+    - 🟢 **只读命令**：自动执行（如 `Get-Process`, `ping`）
+    - 🟡 **非只读命令**：需用户回车确认（黄色高亮）
+    - 🔴 **危险命令**：需用户回车确认（红色高亮）
 - **跨平台支持**：自动检测操作系统，并为 **Windows PowerShell** 或 **Linux Bash** 生成相应的命令。
 - **危险等级高亮**：根据命令的潜在影响进行视觉颜色预警：
   - <kbd>🟢 绿色</kbd>：无害 / 只读类（如 `ls`, `Get-Process`）
@@ -170,7 +178,7 @@ ai -c
 
 **命令行选项：**
 - `ai <指令>` - 转换自然语言并执行命令
-- `ai -a <问题>` - 向 AI 提问关于系统的问题（助手模式，仅执行只读命令）
+- `ai -a <问题>` - 向 AI 提问关于系统的问题（助手模式，带安全检查）
 - `ai -d <指令>` - 启用调试模式（输出日志到 stderr）
 - `ai -c` - 运行配置向导
 - `ai -h` - 显示帮助信息
