@@ -15,7 +15,7 @@ A lightweight CLI tool that converts natural language instructions into executab
 ### Features
 
 - **Natural Language Processing**: Convert phrases like "list all log files in temp folder" into precise shell commands.
-- **Assistant Mode (`-a`)**: Ask AI questions about your system. The AI autonomously runs commands to gather information and provides a clear answer — with full transparency on every command executed and its purpose.
+- **Assistant Mode (`-a`)**: Ask AI questions about your system. The AI autonomously runs commands to gather information and provides a clear answer — with full transparency on every command executed and its purpose. Tool call output is displayed in gray to distinguish it from the final answer.
   - **Three-tier Safety Mechanism**:
     - 🟢 **Read-only**: Auto-executed (e.g., `Get-Process`, `ping`)
     - 🟡 **Non-read-only**: Requires user confirmation (yellow highlight)
@@ -27,7 +27,8 @@ A lightweight CLI tool that converts natural language instructions into executab
   - <kbd>🟠 Orange</kbd>: Medium danger / Modifying individual items (e.g., `rm file.txt`)
   - <kbd>🔴 Red</kbd>: High danger / Batch deletion or system changes (e.g., `rm -rf`, `format`)
 - **Multi-Provider Support**: Compatible with OpenAI API and Baidu Wenxin, easily extensible to other AI platforms.
-- **Configuration Wizard**: Interactive setup with `ai -c` to configure API keys without manual editing.
+- **Configuration Wizard**: Interactive setup with `ai -c` — each option defaults to the current saved value, press Enter to keep it.
+- **Show Config**: Use `ai -i` to quickly view current API configuration (keys are masked for security).
 - **Debug Mode**: Enable detailed logging with `ai -d` for troubleshooting.
 - **Optimized**: Compact binary (~2.3MB) thanks to build optimizations and UPX compression.
 
@@ -85,7 +86,8 @@ To use `ai` from any directory, add the folder containing the `ai` binary to you
 - `ai <command>` - Convert natural language to command and execute
 - `ai -a <question>` - Ask AI about your system (assistant mode with safety checks)
 - `ai -d <command>` - Enable debug mode (output logs to stderr)
-- `ai -c` - Run configuration wizard
+- `ai -c` - Run configuration wizard (defaults to current values)
+- `ai -i` - Show current API configuration
 - `ai -h` - Show help message
 
 ```bash
@@ -110,7 +112,7 @@ AI Command 是一个轻量级的命令行工具，利用大语言模型（LLM）
 ### 功能特性
 
 - **自然语言处理**：将"列出 temp 文件夹下所有的日志文件"之类的短语转换为精确的 shell 命令。
-- **助手模式 (`-a`)**：向 AI 提问关于系统的问题。AI 会自动执行命令收集信息并给出清晰回答 —— 每条执行的命令和调用目的都完全透明。
+- **助手模式 (`-a`)**：向 AI 提问关于系统的问题。AI 会自动执行命令收集信息并给出清晰回答 —— 每条执行的命令和调用目的都完全透明。工具调用过程以灰色输出显示，与最终回答区分。
   - **三级安全机制**：
     - 🟢 **只读命令**：自动执行（如 `Get-Process`, `ping`）
     - 🟡 **非只读命令**：需用户回车确认（黄色高亮）
@@ -122,7 +124,8 @@ AI Command 是一个轻量级的命令行工具，利用大语言模型（LLM）
   - <kbd>🟠 橙色</kbd>：中风险 / 修改单个对象（如 `rm file.txt`）
   - <kbd>🔴 红色</kbd>：高风险 / 批量删除或系统级更改（如 `rm -rf`, `format`）
 - **多平台支持**：兼容 OpenAI API 和百度文心一言，可轻松扩展至其他 AI 平台。
-- **配置向导**：使用 `ai -c` 交互式配置 API 密钥，无需手动编辑文件。
+- **配置向导**：使用 `ai -c` 交互式配置 —— 每个选项默认显示当前值，直接回车即可保留。
+- **查看配置**：使用 `ai -i` 快速查看当前 API 配置（密钥自动脱敏）。
 - **调试模式**：使用 `ai -d` 启用详细日志输出，便于排查问题。
 - **极小体积**：经过编译优化和 UPX 压缩，二进制文件仅约 2.3MB。
 
@@ -180,7 +183,8 @@ ai -c
 - `ai <指令>` - 转换自然语言并执行命令
 - `ai -a <问题>` - 向 AI 提问关于系统的问题（助手模式，带安全检查）
 - `ai -d <指令>` - 启用调试模式（输出日志到 stderr）
-- `ai -c` - 运行配置向导
+- `ai -c` - 运行配置向导（默认值为当前配置）
+- `ai -i` - 查看当前 API 配置
 - `ai -h` - 显示帮助信息
 
 ```bash

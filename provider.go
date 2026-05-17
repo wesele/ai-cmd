@@ -98,13 +98,13 @@ func (p *OpenAIProvider) ChatWithTools(cfg *Config, messages []Message) (*ChatRe
 			Type: "function",
 			Function: ToolFunc{
 				Name:        "execute_command",
-				Description: "Execute a read-only system command to gather information. Only safe, non-modifying commands are allowed.",
+				Description: "Execute a system command. Read-only queries run automatically; commands that may modify the system will require user confirmation.",
 				Parameters: ToolParameters{
 					Type: "object",
 					Properties: map[string]ToolProp{
 						"command": {
 							Type:        "string",
-							Description: "The read-only shell command to execute",
+							Description: "The shell command to execute",
 						},
 						"purpose": {
 							Type:        "string",

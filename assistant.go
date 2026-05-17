@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -11,10 +12,11 @@ import (
 	"time"
 )
 
-var safeCommands = map[string]bool{
+var readOnlyCommands = map[string]bool{
 	"Get-Process":         true,
 	"Get-Service":         true,
 	"Get-EventLog":        true,
+	"Get-WinEvent":        true,
 	"Get-Content":         true,
 	"Select-String":       true,
 	"Get-ChildItem":       true,
@@ -39,10 +41,12 @@ var safeCommands = map[string]bool{
 	"Get-PSDrive":         true,
 	"Get-NetAdapter":      true,
 	"Get-NetIPAddress":    true,
+	"Get-NetConnectionProfile": true,
 	"Get-LocalUser":       true,
 	"Get-LocalGroup":      true,
 	"Get-NetTCPConnection": true,
 	"Get-NetRoute":        true,
+	"Get-NetFirewallRule": true,
 	"Measure-Object":      true,
 	"Sort-Object":         true,
 	"Group-Object":        true,
@@ -53,6 +57,9 @@ var safeCommands = map[string]bool{
 	"Get-Counter":         true,
 	"Get-FileHash":        true,
 	"Get-AuthenticodeSignature": true,
+	"Test-Connection":     true,
+	"Test-NetConnection":  true,
+	"Resolve-DnsName":     true,
 	"dir":                 true,
 	"ls":                  true,
 	"cat":                 true,
@@ -103,33 +110,32 @@ var safeCommands = map[string]bool{
 	"lsmem":               true,
 	"lsusb":               true,
 	"lspci":               true,
+	"powercfg":            true,
+	"Get-ComputerRestorePoint": true,
+	"Get-PSRepository":    true,
+	"Get-ExecutionPolicy": true,
 }
 
 var dangerousPatterns = []string{
-	"Remove-Item", "rm ", "rm\t", "del ", "del\t", "rmdir", "rd ",
+	"Remove-Item", "rm -rf", "rm -r", "rm\t-rf", "rm\t-r", "del /s", "del /f", "rmdir /s", "rd /s",
 	"Set-Content", "Add-Content", "Clear-Content",
-	"New-Item", "mkdir", "touch ",
-	"Stop-Process", "kill ", "Stop-Service",
-	"Start-Process", "Start-Service", "Restart-",
-	"Set-ExecutionPolicy", "Set-ItemProperty",
-	"format", "diskpart", "chkdsk ",
+	"format", "diskpart", "chkdsk /f", "chkdsk /r",
 	"reg add", "reg delete", "reg copy", "reg restore", "reg load", "reg save",
-	"sc create", "sc delete", "sc config", "sc start", "sc stop",
+	"sc create", "sc delete", "sc config",
 	"net user /add", "net user /delete", "net localgroup /add", "net localgroup /delete",
 	"net share /delete", "net session /delete",
 	"schtasks /create", "schtasks /delete", "schtasks /change",
 	"shutdown", "restart", "logoff",
-	"taskkill", "tskill",
-	"attrib +", "icacls", "takeown",
-	"bcdedit", "bootcfg",
-	"fsutil", "cipher",
-	">>", ">&", "2>&1", "| Out-File", "> $",
+	"taskkill", "tskill", "Stop-Process", "kill ",
+	"attrib +", "icacls /grant", "icacls /deny", "takeown",
+	"bcdedit /set", "bcdedit /delete",
+	"fsutil", "cipher /w",
+	">>", "| Out-File", "> $env:TEMP", "> /tmp/",
 	"Invoke-Expression", "Invoke-WebRequest", "Invoke-RestMethod",
 	"Start-BitsTransfer",
 	"curl -X POST", "curl -X PUT", "curl -X DELETE", "curl -d",
-	"chmod +", "chown", "chgrp",
-	"mkfs", "fdisk", "parted", "mount ", "umount",
-	"iptables", "firewall-cmd",
+	"mkfs", "fdisk", "parted", "mount -o rw", "umount",
+	"iptables -A", "iptables -F", "firewall-cmd --permanent",
 	"crontab -e", "crontab -r",
 	"useradd", "userdel", "usermod", "groupadd", "groupdel",
 	"passwd", "visudo",
@@ -138,34 +144,40 @@ var dangerousPatterns = []string{
 	"apt-get install", "apt-get remove", "apt-get purge", "apt-get upgrade",
 	"yum install", "yum remove", "yum update",
 	"pip install", "npm install", "go get",
-	"dd ", "mkfs", "wipe", "shred",
+	"dd ", "wipe", "shred",
+	"Start-Service", "Stop-Service", "Restart-Service",
+	"Set-ExecutionPolicy", "Set-ItemProperty",
+	"New-Item -ItemType Directory", "mkdir -p",
 }
 
-func isSafeCommand(cmd string) bool {
+func isDangerousCommand(cmd string) bool {
 	cmdTrimmed := strings.TrimSpace(cmd)
 	if cmdTrimmed == "" {
 		return false
 	}
-
 	for _, pattern := range dangerousPatterns {
 		if strings.Contains(strings.ToLower(cmdTrimmed), strings.ToLower(pattern)) {
-			return false
+			return true
 		}
 	}
+	return false
+}
 
+func isReadOnlyCommand(cmd string) bool {
+	cmdTrimmed := strings.TrimSpace(cmd)
+	if cmdTrimmed == "" {
+		return false
+	}
 	firstWord := cmdTrimmed
 	if idx := strings.IndexAny(cmdTrimmed, " \t"); idx != -1 {
 		firstWord = cmdTrimmed[:idx]
 	}
-
-	if safe, ok := safeCommands[firstWord]; ok {
-		return safe
+	if _, ok := readOnlyCommands[firstWord]; ok {
+		return true
 	}
-
-	if safe, ok := safeCommands[strings.ToLower(firstWord)]; ok {
-		return safe
+	if _, ok := readOnlyCommands[strings.ToLower(firstWord)]; ok {
+		return true
 	}
-
 	return false
 }
 
@@ -180,25 +192,47 @@ func truncatePurpose(purpose string) string {
 func stripMarkdown(text string) string {
 	lines := strings.Split(text, "\n")
 	var result []string
+	inDetails := false
 	for _, line := range lines {
+		if strings.HasPrefix(line, "<details") {
+			inDetails = true
+			continue
+		}
+		if inDetails {
+			if strings.HasPrefix(line, "</details>") {
+				inDetails = false
+			}
+			continue
+		}
 		line = strings.TrimPrefix(line, "```")
 		line = strings.TrimPrefix(line, "###")
 		line = strings.TrimPrefix(line, "##")
 		line = strings.TrimPrefix(line, "#")
 		line = strings.ReplaceAll(line, "**", "")
-		line = strings.ReplaceAll(line, "*", "")
 		line = strings.ReplaceAll(line, "`", "")
+		if strings.HasPrefix(line, "Response ID:") || strings.HasPrefix(line, "Request ID:") {
+			continue
+		}
 		if strings.HasPrefix(line, "- ") || strings.HasPrefix(line, "* ") {
 			line = "- " + strings.TrimPrefix(strings.TrimPrefix(line, "- "), "* ")
 		}
 		result = append(result, line)
 	}
-	return strings.Join(result, "\n")
+	return strings.TrimSpace(strings.Join(result, "\n"))
 }
 
-func executeReadOnlyCommand(command, purpose string) (string, error) {
-	if !isSafeCommand(command) {
-		return "", fmt.Errorf("command blocked: not a read-only command")
+func executeCommand(command, purpose string) (string, error) {
+	readOnly := isReadOnlyCommand(command)
+	dangerous := isDangerousCommand(command)
+
+	if !readOnly {
+		if dangerous {
+			fmt.Printf("\r\033[31m[危险命令] %s\033[0m\n", command)
+		} else {
+			fmt.Printf("\r\033[33m[需确认] %s\033[0m\n", command)
+		}
+		fmt.Print("  (Press Enter to execute or Ctrl+C to cancel) ")
+		bufio.NewReader(os.Stdin).ReadBytes('\n')
 	}
 
 	var cmd *exec.Cmd
@@ -243,15 +277,31 @@ func RunAssistantMode(cfg *Config, question string) {
 
 	systemPrompt := fmt.Sprintf(`You are a system analysis assistant. The user will ask questions about their system.
 
-You have access to a tool called "execute_command" that can run read-only system commands to gather information.
+You have access to a tool called "execute_command" that can run system commands to gather information and perform safe, non-destructive operations.
+
+CRITICAL LANGUAGE RULE:
+- You MUST respond in the EXACT SAME LANGUAGE as the user's question.
+- If the user asks in Chinese, your ENTIRE response (including all analysis, recommendations, and explanations) MUST be in Chinese.
+- If the user asks in English, respond entirely in English.
+- NEVER mix languages in your final answer.
 
 Rules:
 - Use the execute_command tool to gather information needed to answer the user's question
 - You may call the tool multiple times if needed
 - For each tool call, provide a clear "purpose" explaining why you're running the command
-- Only use read-only/query commands (e.g., Get-Process, tasklist, netstat, systeminfo, ipconfig, dir, ps, top, etc.)
-- NEVER use commands that modify, delete, create, or change anything
-- After gathering information, analyze the results and provide a clear answer to the user
+- Allowed commands include:
+  - Read-only/query commands (e.g., Get-Process, tasklist, netstat, systeminfo, ipconfig, dir, ps, top)
+  - Diagnostic/test commands (e.g., ping, Test-Connection, Test-NetConnection, nslookup)
+  - Safe informational commands that do not modify system state
+- NEVER execute commands that delete, destroy, or irreversibly modify data
+- NEVER execute commands that change system configuration, services, users, or permissions
+- NEVER execute commands that install/uninstall software
+- NEVER execute commands that modify network firewall rules
+- If a command fails or returns an error, try a different approach or alternative command — do NOT give up
+- If a command is blocked as dangerous, find a safer alternative that achieves the same goal
+- After gathering information, you MUST analyze the results and provide a clear answer
+- You SHOULD provide analysis, recommendations, and optimization advice based on the data — giving text advice is NOT modifying the system
+- If the user asks for suggestions or advice, provide them based on your analysis of the collected data
 - If you can answer without running commands, do so
 - The user's operating system is: %s
 
@@ -306,12 +356,15 @@ When you have enough information, provide your final answer in a clear, organize
 			}
 			messages = append(messages, assistantMsg)
 
+			gray := "\033[90m"
+			reset := "\033[0m"
+
 			for _, tc := range msg.ToolCalls {
 				var args ToolCallArgs
 				if err := json.Unmarshal([]byte(tc.Function.Arguments), &args); err != nil {
 					toolResult := Message{
 						Role:       "tool",
-						Content:    fmt.Sprintf("Error parsing arguments: %v", err),
+						Content:    fmt.Sprintf("Error: failed to parse arguments. Please fix the JSON format and try again. Original: %s", tc.Function.Arguments),
 						ToolCallID: tc.ID,
 					}
 					messages = append(messages, toolResult)
@@ -319,13 +372,20 @@ When you have enough information, provide your final answer in a clear, organize
 				}
 
 				purpose := truncatePurpose(args.Purpose)
-				fmt.Printf("\r[%s] - %s\n", purpose, args.Command)
+				readOnly := isReadOnlyCommand(args.Command)
+				if readOnly {
+					fmt.Printf("\r%s[%s] - %s%s\n", gray, purpose, args.Command, reset)
+				}
 
-				result, execErr := executeReadOnlyCommand(args.Command, args.Purpose)
+				result, execErr := executeCommand(args.Command, args.Purpose)
 
 				content := result
 				if execErr != nil {
-					content = fmt.Sprintf("Error: %v\nOutput:\n%s", execErr, result)
+					if strings.Contains(execErr.Error(), "blocked") {
+						content = fmt.Sprintf("BLOCKED: This command was rejected by the safety filter. You must use a safer alternative command. Original command: %s", args.Command)
+					} else {
+						content = fmt.Sprintf("FAILED: %v\nOutput so far:\n%s\nPlease try a different command or adjust your approach.", execErr, result)
+					}
 				}
 
 				toolResult := Message{
@@ -340,7 +400,7 @@ When you have enough information, provide your final answer in a clear, organize
 		}
 
 		if msg.Content != "" {
-			fmt.Printf("\n%s\n", stripMarkdown(msg.Content))
+			fmt.Printf("\n%s\n\n", stripMarkdown(msg.Content))
 		}
 
 		return

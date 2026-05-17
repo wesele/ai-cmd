@@ -17,6 +17,7 @@ func showHelp() {
 	fmt.Println("  -h, --help     Show this help message")
 	fmt.Println("  -d, --debug    Enable debug mode (output logs to stderr)")
 	fmt.Println("  -c, --config   Run configuration wizard to set up API keys")
+	fmt.Println("  -i, --info     Show current API configuration")
 	fmt.Println("  -a, --ask      Ask AI about your system (assistant mode)")
 	fmt.Println("\nExamples:")
 	fmt.Println("  ai list all files in current directory")
@@ -34,6 +35,19 @@ func showHelp() {
 	fmt.Println("\n  Config File:")
 	configPath, _ := getConfigPath()
 	fmt.Printf("    %s\n", configPath)
+}
+
+func showConfig(cfg *Config) {
+	fmt.Println("Current Configuration:")
+	fmt.Printf("  Provider:  %s\n", cfg.Provider)
+	fmt.Printf("  API Key:   %s\n", maskKey(cfg.APIKey))
+	fmt.Printf("  Endpoint:  %s\n", cfg.Endpoint)
+	fmt.Printf("  Model:     %s\n", cfg.Model)
+	if cfg.Secret != "" {
+		fmt.Printf("  Secret:    %s\n", maskKey(cfg.Secret))
+	}
+	configPath, _ := getConfigPath()
+	fmt.Printf("  Config:    %s\n", configPath)
 }
 
 func colorize(text, level string) string {
@@ -59,6 +73,7 @@ func main() {
 	args := []string{os.Args[0]}
 	debugEnabled := false
 	runConfig := false
+	showInfo := false
 	assistantMode := false
 	for _, arg := range os.Args[1:] {
 		switch arg {
@@ -66,6 +81,8 @@ func main() {
 			debugEnabled = true
 		case "-c", "--config":
 			runConfig = true
+		case "-i", "--info":
+			showInfo = true
 		case "-a", "--ask":
 			assistantMode = true
 		default:
@@ -85,6 +102,13 @@ func main() {
 		os.Exit(0)
 	}
 
+	cfg := LoadConfig()
+
+	if showInfo {
+		showConfig(cfg)
+		os.Exit(0)
+	}
+
 	if len(os.Args) < 2 {
 		showHelp()
 		os.Exit(1)
@@ -94,8 +118,6 @@ func main() {
 		showHelp()
 		os.Exit(0)
 	}
-
-	cfg := LoadConfig()
 
 	naturalLang := strings.Join(os.Args[1:], " ")
 	LogInfo("Input: %q", naturalLang)
