@@ -1,7 +1,58 @@
+```
 # Binaries
-ai.exe
-ai-linux
+*.exe
+*.dll
+*.so
+*.a
+*.o
+*.obj
+*.out
 
-# OS files
-.DS_Store
-Thumbs.db
+# Dependencies
+vendor/
+
+# Logs
+*.log
+
+# Environment
+.env
+.env.local
+*.env.*
+
+# Editors
+.vscode/
+.idea/
+
+# Build artifacts
+dist/
+build/
+target/
+
+# Package management
+*.mod
+*.sum
+
+# Compression
+*.zip
+*.gz
+*.tar
+*.tgz
+*.bz2
+*.xz
+*.7z
+*.rar
+*.zst
+*.lz4
+*.lzh
+*.cab
+*.arj
+*.rpm
+*.deb
+*.Z
+*.lz
+*.lzo
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.tar.zst
+```
