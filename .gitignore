@@ -1,7 +1,60 @@
-# Binaries
-ai.exe
-ai-linux
+```
+# Compiled and binary files
+*.o
+*.obj
+*.out
 
-# OS files
+# Dependencies
+vendor/
+
+# Logs and temp files
+*.log
+*.tmp
+
+# Editors
+.vscode/
+.idea/
+
+# Environment
+.env
+.env.local
+.env.*
+
+# Coverage
+coverage/
+htmlcov/
+.coverage
+
+# Build artifacts
+dist/
+build/
+target/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+.venv.bak/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.git/
+*.sublime-project
+*.sublime-workspace
+.pytest_cache/
+.hypothesis/
 .DS_Store
 Thumbs.db
+```

@@ -14,11 +14,16 @@ func showHelp() {
 	fmt.Println("  ai [options] <command>    Convert natural language to a shell command and execute it")
 	fmt.Println("  ai -a <question>          Ask AI about your system (AI runs read-only commands to answer)")
 	fmt.Println("\nOptions:")
-	fmt.Println("  -h, --help     Show this help message")
-	fmt.Println("  -d, --debug    Enable debug mode (output logs to stderr)")
-	fmt.Println("  -c, --config   Run configuration wizard to set up API keys")
-	fmt.Println("  -i, --info     Show current API configuration")
-	fmt.Println("  -a, --ask      Ask AI about your system (assistant mode)")
+	fmt.Println("  -h, --help       Show this help message")
+	fmt.Println("  -d, --debug      Enable debug mode (output logs to stderr)")
+	fmt.Println("  -c, --config     Run configuration wizard to set up API keys")
+	fmt.Println("  -i, --info       Show current API configuration")
+	fmt.Println("  -a, --ask        Ask AI about your system (assistant mode)")
+fmt.Println("  --history        Show command history")
+fmt.Println("\nHistory Shortcuts:")
+fmt.Println("  !!               Repeat last command")
+fmt.Println("  !<number>        Repeat command by ID (e.g., !12)")
+fmt.Println("  !<keyword>       Search and repeat command (e.g., !memory)")
 	fmt.Println("\nExamples:")
 	fmt.Println("  ai list all files in current directory")
 	fmt.Println("  ai -d explain current directory structure")
@@ -26,6 +31,9 @@ func showHelp() {
 	fmt.Println("  ai find all log files in c:\\temp including subdirectories")
 	fmt.Println("  ai -a 系统里有没有不认识的进程")
 	fmt.Println("  ai -a what services are running on my system")
+fmt.Println("  ai !!                            # Repeat last command")
+fmt.Println("  ai !5                            # Repeat command #5")
+fmt.Println("  ai '!docker'                     # Search and run docker command")
 	fmt.Println("\nConfiguration:")
 	fmt.Println("  Environment Variables:")
 	fmt.Println("    AI_CMD_API_KEY      Your LLM API key")
@@ -75,6 +83,7 @@ func main() {
 	runConfig := false
 	showInfo := false
 	assistantMode := false
+	showHistory := false
 	for _, arg := range os.Args[1:] {
 		switch arg {
 		case "-d", "--debug":
@@ -85,6 +94,8 @@ func main() {
 			showInfo = true
 		case "-a", "--ask":
 			assistantMode = true
+		case "--history":
+			showHistory = true
 		default:
 			args = append(args, arg)
 		}
@@ -109,6 +120,20 @@ func main() {
 		os.Exit(0)
 	}
 
+	// Initialize history manager
+	historyMgr, err := NewHistoryManager()
+	if err != nil {
+		LogError("Failed to initialize history: %v", err)
+	}
+
+	// Show history if requested
+	if showHistory {
+		if historyMgr != nil {
+			historyMgr.PrintHistory()
+		}
+		os.Exit(0)
+	}
+
 	if len(os.Args) < 2 {
 		showHelp()
 		os.Exit(1)
@@ -121,6 +146,14 @@ func main() {
 
 	naturalLang := strings.Join(os.Args[1:], " ")
 	LogInfo("Input: %q", naturalLang)
+
+	// Check for special history commands
+	if historyMgr != nil {
+		if resolved, ok := historyMgr.ResolveSpecialCommand(naturalLang); ok {
+			naturalLang = resolved
+			LogInfo("Resolved to: %q", naturalLang)
+		}
+	}
 
 	if assistantMode {
 		RunAssistantMode(cfg, naturalLang)
@@ -174,5 +207,11 @@ func main() {
 
 	exitCode := Execute(command)
 	LogInfo("Execution finished | Command: %q | Exit code: %d", command, exitCode)
+
+	// Save to history
+	if historyMgr != nil {
+		historyMgr.Add(naturalLang, command, exitCode == 0)
+	}
+
 	os.Exit(exitCode)
 }
