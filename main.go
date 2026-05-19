@@ -167,8 +167,10 @@ func main() {
 	LogCommand(naturalLang, command, danger, elapsed)
 	fmt.Printf("\r> %s", colorize(command, danger))
 
-	reader := bufio.NewReader(os.Stdin)
-	_, _ = reader.ReadString('\n')
+	if danger != "green" {
+		reader := bufio.NewReader(os.Stdin)
+		_, _ = reader.ReadString('\n')
+	}
 
 	exitCode := Execute(command)
 	LogInfo("Execution finished | Command: %q | Exit code: %d", command, exitCode)
